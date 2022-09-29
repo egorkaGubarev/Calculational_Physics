@@ -1,8 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+draw_connect = True
+
 aux = np.loadtxt("../../../VSProjects/Calculational_physics/Surf/aux_info.txt")
-circ = np.loadtxt("../../../VSProjects/Calculational_physics/Surf/eight.txt")
+circ = np.loadtxt("../../../VSProjects/Calculational_physics/Surf/cardioid.txt")
 
 dots_on_circ = int(aux)
 connect_string_number = dots_on_circ + 1
@@ -28,24 +30,34 @@ connect_strings_numb = len(connect_x)
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
+ax.set_xlim(-1, 1)
+ax.set_ylim(-1, 1)
+ax.set_zlim(-1, 1)
+
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('z')
+
+ax.set_title('Circuit')
 ax.plot(circ_x, circ_y, circ_z)
 ax.plot(nodes_x, nodes_y, nodes_z, '.')
 
-for i in range(0, connect_strings_numb - 1, 2):
-    connect_index = i + 1
+if draw_connect:
+    for i in range(0, connect_strings_numb - 1, 2):
+        connect_index = i + 1
 
-    node_x = connect_x[i]
-    node_y = connect_y[i]
-    node_z = connect_z[i]
+        node_x = connect_x[i]
+        node_y = connect_y[i]
+        node_z = connect_z[i]
 
-    connected_x = connect_x[connect_index]
-    connected_y = connect_y[connect_index]
-    connected_z = connect_z[connect_index]
+        connected_x = connect_x[connect_index]
+        connected_y = connect_y[connect_index]
+        connected_z = connect_z[connect_index]
 
-    x = (node_x, connected_x)
-    y = (node_y, connected_y)
-    z = (node_z, connected_z)
+        x = (node_x, connected_x)
+        y = (node_y, connected_y)
+        z = (node_z, connected_z)
 
-    ax.plot(x, y, z, color='red')
+        ax.plot(x, y, z, color='red')
 
 plt.show()

@@ -26,9 +26,9 @@ struct Point
 template <typename type>
 struct Segment
 {
-    const Point<type> begin_, end_;
+    Point<type>& begin_, end_;
 
-    Segment(const Point<type> begin, const Point<type> end): begin_{begin}, end_{end} {}
+    Segment(Point<type>& begin, Point<type>& end): begin_{begin}, end_{end} {}
 
     ~Segment() = default;
 };
@@ -53,9 +53,9 @@ struct Node
 template <typename type>
 struct Triangle
 {
-    const Segment<type> segm_1_, segm_2_, segm_3_;
+    Segment<type>& segm_1_, segm_2_, segm_3_;
 
-    Triangle(const Segment<type> segm_1, const Segment<type> segm_2, const Segment<type> segm_3):
+    Triangle(const Segment<type>& segm_1, const Segment<type>& segm_2, const Segment<type>& segm_3):
     segm_1_{segm_1}, segm_2_{segm_2}, segm_3_{segm_3} {}
 
     ~Triangle() = default;
@@ -66,6 +66,7 @@ struct Circuit
 {
     my_type x_max_, x_min_, y_max_, y_min_, z_max_, z_min_, x_center_, y_center_, z_center_;
     std::list<Node<type>> soft_nodes_, rigid_nodes_;
+    std::list<Segment<type>> segments_;
 
     Circuit(Point<type> generator(const type t), const uint dots)
     {
@@ -73,12 +74,13 @@ struct Circuit
         Point<type> zero = generator(0);
         create_rigid_node(zero);
 
-        for (type t = step; t < 1; t += step) {
+        for (uint dot = 1; dot < dots; ++ dot) {
+            const type t = step * dot;
             Point<type> new_point = generator(t);
             create_rigid_node(new_point);
             Node<type>& prev = get_last_but_one_rigid_node();
             Node<type>& current = get_last_rigid_node();
-            current.connect(prev);
+            connect(prev, current);
         }
 
         connect_last_and_zero();
@@ -159,10 +161,8 @@ struct Circuit
         Node<type>& center = *begin;
         std::vector<std::reference_wrapper<Node<type>>>& connected_nodes = center.connected_nodes_;
 
-        for (Node<type>& to_connect : rigid_nodes_) {
-            connected_nodes.push_back(to_connect);
-            std::vector<std::reference_wrapper<Node<type>>>& reverse_connect = to_connect.connected_nodes_;
-            reverse_connect.push_back(center);
+        for (Node<type>& to_connect : rigid_nodes_){
+            connect(center, to_connect);
         }
     }
 
@@ -205,7 +205,35 @@ struct Circuit
         Node<type>& last = get_last_rigid_node();
         typename std::list<Node<type>>::iterator begin = std::begin(rigid_nodes_);
         Node<type>& first = *begin;
-        last.connect(first);
+        connect(first, last);
+    }
+
+    // Placeholder. Counts triangles muliple times
+    void find_new_triangles(Node<type>& first, Node<type>& second)
+    {
+        const std::vector<std::reference_wrapper<Node<type>>>& first_connect = first.connected_nodes_;
+        const std::vector<std::reference_wrapper<Node<type>>>& second_connect = second.connected_nodes_;
+
+        const Node<type>* const first_ptr = &first;
+        const Node<type>* const second_ptr = &second;
+
+        for (const Node<type>& node_connect_with_first : first_connect) {
+            const Node<type>* const node_connect_with_first_ptr = &node_connect_with_first;
+            if (node_connect_with_first_ptr != second_ptr) {
+                for (const Node<type>& node_connect_with_second : second_connect) {
+                    const Node<type>* const node_connect_with_second_ptr = &node_connect_with_second;
+                    if (node_connect_with_first_ptr == node_connect_with_second_ptr) {
+                        std::cout << "Triangle" << '\n';
+                    }
+                }
+            }
+        }
+    }
+
+    void connect(Node<type>& first, Node<type>& second)
+    {
+        first.connect(second);
+        find_new_triangles(first, second);
     }
 
     std::ofstream& log_rigid(std::ofstream& out) const
@@ -329,22 +357,40 @@ Point<type> eight(const type t)
     return point;
 }
 
+template <typename type>
+Point<type> cardioid(const type t)
+{
+    const type vertic_amplit = 1;
+    const type vertic_frequency = 1;
+
+    const type pi = (type)std::acos(-1);
+    const type angle = 2 * pi * t;
+
+    const type x = (type)(2 * std::cos(angle) - std::cos(2 * angle));
+    const type y = (type)(2 * std::sin(angle) - std::sin(2 * angle));
+    const type z = vertic_amplit * std::sin(angle * vertic_frequency);
+
+    const Point<type> point(x, y, z);
+    return point;
+}
+
 int main()
 {
-    const uint dots_on_circ = 100;
-    std::ofstream aux, file_circle, file_deform_circle, file_eight;
+    const uint dots_on_circ = 10;
+    std::ofstream aux, file_circle, file_deform_circle, file_eight, file_cardioid;
 
     aux.open("aux_info.txt");
     file_circle.open("circle.txt");
     file_deform_circle.open("deform_circle.txt");
     file_eight.open("eight.txt");
+    file_cardioid.open("cardioid.txt");
 
-    Circuit<my_type> circ_circle(circle, dots_on_circ), circ_deform_circle(deform_circle, dots_on_circ), circ_eight(eight, dots_on_circ);
+    Circuit<my_type> circ_circle(circle, dots_on_circ), circ_deform_circle(deform_circle, dots_on_circ), circ_eight(eight, dots_on_circ), circ_cardioid(cardioid, dots_on_circ);
 
     aux << dots_on_circ << '\n';
     aux.close();
-    std::vector<std::reference_wrapper<std::ofstream>> files{file_circle, file_deform_circle, file_eight};
-    std::vector<std::reference_wrapper<Circuit<my_type>>> circs{ circ_circle, circ_deform_circle, circ_eight };
+    std::vector<std::reference_wrapper<std::ofstream>> files{file_circle, file_deform_circle, file_eight, file_cardioid};
+    std::vector<std::reference_wrapper<Circuit<my_type>>> circs{ circ_circle, circ_deform_circle, circ_eight, circ_cardioid };
     const size_t circs_amount = std::size(circs);
 
     for (size_t circ_numb = 0; circ_numb < circs_amount; ++circ_numb) {
