@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 draw_connect = True
 
 aux = np.loadtxt("../../../VSProjects/Calculational_physics/Surf/aux_info.txt")
-circ = np.loadtxt("../../../VSProjects/Calculational_physics/Surf/cardioid.txt")
+circ = np.loadtxt("../../../VSProjects/Calculational_physics/Surf/circle.txt")
 
 dots_on_circ = int(aux)
 connect_string_number = dots_on_circ + 1
@@ -29,10 +29,6 @@ connect_z = circ[connect_string_number:, 2]
 connect_strings_numb = len(connect_x)
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-
-ax.set_xlim(-1, 1)
-ax.set_ylim(-1, 1)
-ax.set_zlim(-1, 1)
 
 ax.set_xlabel('x')
 ax.set_ylabel('y')
