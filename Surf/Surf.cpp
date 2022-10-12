@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <cmath>
 #include <fstream>
@@ -24,16 +25,6 @@ struct Point
 };
 
 template <typename type>
-struct Segment
-{
-    Point<type>& begin_, end_;
-
-    Segment(Point<type>& begin, Point<type>& end): begin_{begin}, end_{end} {}
-
-    ~Segment() = default;
-};
-
-template <typename type>
 struct Node
 {
     bool is_rigid_;
@@ -48,15 +39,180 @@ struct Node
         std::vector<std::reference_wrapper<Node<type>>>& connections = other.connected_nodes_;
         connections.push_back(*this);
     }
+
+    void disconnect(Node<type>& other)
+    {
+        Node<type>* to_disconnect_p = &other;
+        const size_t connections = std::size(connected_nodes_);
+        for (uint i = 0; i < connections; ++i) {
+            Node<type>& node = connected_nodes_[i];
+            Node<type>* node_p = &node;
+            if (node_p == to_disconnect_p) {
+                std::cout << "Disconnect" << '\n';
+            }
+        }
+    }
+};
+
+template <typename type>
+struct Segment
+{
+    type length_;
+    Node<type>& begin_, end_;
+
+    Segment(Node<type>& begin, Node<type>& end) : begin_{ begin }, end_{ end }
+    {
+        const Point<type>& point_begin = begin_.point_;
+        const Point<type>& point_end = end_.point_;
+
+        const type x_begin = point_begin.x_;
+        const type y_begin = point_begin.y_;
+        const type z_begin = point_begin.z_;
+
+        const type x_end = point_end.x_;
+        const type y_end = point_end.y_;
+        const type z_end = point_end.z_;
+
+        const type delta_x = x_end - x_begin;
+        const type delta_y = y_end - y_begin;
+        const type delta_z = z_end - z_begin;
+
+        length_ = (type) std::sqrt(std::pow(delta_x, 2) + std::pow(delta_y, 2) + std::pow(delta_y, 2));
+
+    }
+    
+    Node<type> get_center() const
+    {
+        const Point<type>& begin_point = begin_.point_;
+        const Point<type>& end_point = end_.point_;
+
+        const type x_begin = begin_point.x_;
+        const type y_begin = begin_point.y_;
+        const type z_begin = begin_point.z_;
+
+        const type x_end = end_point.x_;
+        const type y_end = end_point.y_;
+        const type z_end = end_point.z_;
+
+        const type x_center = (x_begin + x_end) / 2;
+        const type y_center = (y_begin + y_end) / 2;
+        const type z_center = (z_begin + z_end) / 2;
+
+        Point<type> center(x_center, y_center, z_center);
+        Node<type> center_node(center, false);
+        return center_node;
+    }
+
+    ~Segment() = default;
 };
 
 template <typename type>
 struct Triangle
 {
-    Segment<type>& segm_1_, segm_2_, segm_3_;
+    type length_, square_, max_length_, min_length_;
+    Node<type>& node_1_, node_2_, node_3_;
+    Node<type>* max_begin_, * max_end_, * min_begin_, * min_end_;
 
-    Triangle(const Segment<type>& segm_1, const Segment<type>& segm_2, const Segment<type>& segm_3):
-    segm_1_{segm_1}, segm_2_{segm_2}, segm_3_{segm_3} {}
+    Triangle(Node<type>& node_1, Node<type>& node_2, Node<type>& node_3):
+    node_1_{ node_1}, node_2_{ node_2}, node_3_{ node_3}
+    {
+        const Segment<type> first(node_1_, node_2_);
+        const Segment<type> second(node_1_, node_3_);
+        const Segment<type> theird(node_2_, node_3_);
+
+        const type length_1 = first.length_;
+        const type length_2 = second.length_;
+        const type length_3 = theird.length_;
+
+        length_ = length_1 + length_2 + length_3;
+        const type half_length = length_ / 2;
+        square_ = std::sqrt(half_length * (half_length - length_1) * (half_length - length_2) * (half_length - length_3));
+
+        if (length_1 > length_2) {
+            if (length_1 > length_3) {
+                max_length_ = length_1;
+
+                max_begin_ = &node_1_;
+                max_end_ = &node_2_;
+
+                if (length_2 > length_3) {
+                    min_length_ = length_3;
+
+                    min_begin_ = &node_1_;
+                    min_end_ = &node_3_;
+                }
+                else {
+                    min_length_ = length_2;
+
+                    min_begin_ = &node_2_;
+                    min_end_ = &node_3_;
+                }
+            }
+            else {
+                max_length_ = length_3;
+                min_length_ = length_2;
+
+                min_begin_ = &node_2_;
+                min_end_ = &node_3_;
+
+                max_begin_ = &node_1_;
+                max_end_ = &node_3_;
+            }
+        }
+        else {
+            if (length_2 > length_3) {
+                max_length_ = length_2;
+
+                max_begin_ = &node_2_;
+                max_end_ = &node_3_;
+
+                if (length_1 > length_3) {
+                    min_length_ = length_3;
+
+                    min_begin_ = &node_1_;
+                    min_end_ = &node_3_;
+                }
+                else {
+                    min_length_ = length_1;
+
+                    min_begin_ = &node_1_;
+                    min_end_ = &node_2_;
+                }
+            }
+            else {
+                max_length_ = length_3;
+                min_length_ = length_1;
+
+                min_begin_ = &node_1_;
+                min_end_ = &node_2_;
+
+                max_begin_ = &node_1_;
+                max_end_ = &node_3_;
+            }
+        }
+    }
+
+    bool is_equal(const Triangle<type> other) const
+    {
+        const Node<type>& other_node_1 = other.node_1_;
+        const Node<type>& other_node_2 = other.node_2_;
+        const Node<type>& other_node_3 = other.node_3_;
+
+        const Node <type>* node_1_ptr = &node_1_;
+        const Node <type>* node_2_ptr = &node_2_;
+        const Node <type>* node_3_ptr = &node_3_;
+
+        const Node<type>* other_node_1_ptr = &other_node_1;
+        const Node<type>* other_node_2_ptr = &other_node_2;
+        const Node<type>* other_node_3_ptr = &other_node_3;
+
+        if (node_1_ptr == other_node_1_ptr && node_2_ptr == other_node_2_ptr && node_3_ptr == other_node_3_ptr) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
 
     ~Triangle() = default;
 };
@@ -66,7 +222,7 @@ struct Circuit
 {
     my_type x_max_, x_min_, y_max_, y_min_, z_max_, z_min_, x_center_, y_center_, z_center_;
     std::list<Node<type>> soft_nodes_, rigid_nodes_;
-    std::list<Segment<type>> segments_;
+    std::list<Triangle<type>> triangles_;
 
     Circuit(Point<type> generator(const type t), const uint dots)
     {
@@ -166,15 +322,6 @@ struct Circuit
         }
     }
 
-    // Not ready
-    void collect_triangles()
-    {
-        for (const Node<type>& point: soft_nodes_) {
-            const std::vector<std::reference_wrapper<Node<type>>>& second_points = point.connected_nodes_;
-
-        }
-    }
-
     void get_surf()
     {
         get_borders_coords();
@@ -199,6 +346,14 @@ struct Circuit
         Node<type>& node = *last;
         return node;
     }
+    
+    Triangle<type>& get_last_triangle()
+    {
+        typename std::list<Triangle<type>>::iterator end = std::end(triangles_);
+        typename std::list<Triangle<type>>::iterator last = std::prev(end);
+        Triangle<type>& triangle = *last;
+        return triangle;
+    }
 
     void connect_last_and_zero()
     {
@@ -208,7 +363,16 @@ struct Circuit
         connect(first, last);
     }
 
-    // Placeholder. Counts triangles muliple times
+    bool is_triangle_exist(const Triangle<type>& triangle)
+    {
+        for (const Triangle<type>& other : triangles_) {
+            if (triangle.is_equal(other)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void find_new_triangles(Node<type>& first, Node<type>& second)
     {
         const std::vector<std::reference_wrapper<Node<type>>>& first_connect = first.connected_nodes_;
@@ -217,13 +381,20 @@ struct Circuit
         const Node<type>* const first_ptr = &first;
         const Node<type>* const second_ptr = &second;
 
-        for (const Node<type>& node_connect_with_first : first_connect) {
-            const Node<type>* const node_connect_with_first_ptr = &node_connect_with_first;
-            if (node_connect_with_first_ptr != second_ptr) {
+        for (Node<type>& theird : first_connect) {
+            Node<type>* const theird_ptr = &theird;
+
+            if (theird_ptr != second_ptr) {
+
                 for (const Node<type>& node_connect_with_second : second_connect) {
                     const Node<type>* const node_connect_with_second_ptr = &node_connect_with_second;
-                    if (node_connect_with_first_ptr == node_connect_with_second_ptr) {
-                        std::cout << "Triangle" << '\n';
+
+                    if (theird_ptr == node_connect_with_second_ptr) {
+                        Triangle<type> new_triangle(first, second, theird);
+                        const bool is_old = is_triangle_exist(new_triangle);
+                        if (!is_old) {
+                            triangles_.push_back(new_triangle);
+                        }
                     }
                 }
             }
