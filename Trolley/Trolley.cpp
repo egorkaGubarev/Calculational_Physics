@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <fstream>
 #include <random>
@@ -86,10 +87,23 @@ public:
             const bool taken = !spot.free;
             if (taken) {
 
-                file << name_ * 1000 + i << '\n';
+                file << name_ * length_ + i << '\n';
             }
         }
         return file;
+    }
+
+    std::vector<uint> spots_to_vector(std::vector<uint>& spots) const
+    {
+        for (uint i = 0; i < length_; ++i) {
+            const Spot& spot = lane_[i];
+            const bool taken = !spot.free;
+            if (taken) {
+                uint coordin = name_ * length_ + i;
+                spots.push_back(coordin);
+            }
+        }
+        return spots;
     }
 };
 
@@ -272,41 +286,75 @@ private:
     Road* locat_;
 };
 
+std::ofstream& Log_mean_quadratic_distance(std::ofstream& file, const std::vector<uint>& spots, const uint trolleys, const uint length, std::vector<float>& vector_dist)
+{
+    bool first_found = false;
+    uint prev_corrdin = spots[0];
+    float part_sum = 0;
+
+    for (uint i = 1; i < trolleys; ++i) {
+        uint coordin = spots[i];
+        const float distance = (float) (coordin - prev_corrdin);
+        vector_dist.push_back(distance);
+        part_sum += (float)std::pow(distance, 2);
+        prev_corrdin = coordin;
+    }
+
+    const float circle_distance = (float) (length - spots[trolleys - 1] + spots[0]);
+    vector_dist.push_back(circle_distance);
+    part_sum += (float)std::pow(circle_distance, 2);
+
+    const float mean_quadratic_distance = std::sqrt(part_sum) / trolleys;
+    file << mean_quadratic_distance << '\n';
+    return file;
+}
+
+std::ofstream& Log_entropy(std::ofstream& file, std::vector<float>& vector_dist)
+{
+    float part_sum = 0;
+
+    for (const float dist : vector_dist) {
+        part_sum += (float) (dist * std::log(dist));
+    }
+
+    file << part_sum << '\n';
+    return file;
+}
+
 int main()
 {
     const uint dt = 1;
     const uint pass_per = 60;
     const uint pass_per_sec_board = 1;
-    const uint max_time = 10000;
+    const uint max_time = 30'000;
     const uint troll = 100;
-    const uint length = 1000;
+    const uint length = 2000;
     const uint speed = 10;
     const std::string init_file_name = "init.txt";
     const std::string res_file_name = "result.txt";
+    const std::string mean_file_name = "mean.txt";
+    const std::string entropy_file_name = "entropy.txt";
     UniformRandomGenerator<uint> generator(-1);
 
     std::ofstream init;
     std::ofstream result;
+    std::ofstream mean;
+    std::ofstream entropy;
     init.open(init_file_name);
     result.open(res_file_name);
+    mean.open(mean_file_name);
+    entropy.open(entropy_file_name);
 
     Road north(length, 0), east(length, 1), south(length, 2), west(length, 3);
     north.AddStop(0);
     east.AddStop(0);
     south.AddStop(0);
     west.AddStop(0);
-    north.AddStop(250);
-    east.AddStop(250);
-    south.AddStop(250);
-    west.AddStop(250);
-    north.AddStop(500);
-    east.AddStop(500);
-    south.AddStop(500);
-    west.AddStop(500);
-    north.AddStop(750);
-    east.AddStop(750);
-    south.AddStop(750);
-    west.AddStop(750);
+    north.AddStop(1'000);
+    east.AddStop(1'000);
+    south.AddStop(1'000);
+    west.AddStop(1'000);
+
     std::vector<std::reference_wrapper<Road>> roads{north, east, south, west};
 
     std::vector<Trolley> trolleys;
@@ -343,13 +391,31 @@ int main()
             trolley.GetPass(pass_per_sec_board);
             trolley.Move(dt);
         }
+
         uint mod = i % pass_per;
+
         if (mod == 0) {
             for (Spot& stop : stops) {
                 const uint new_pass = generator.get_number(0, 1);
                 stop.pass += new_pass;
             }
         }
+
+        std::vector<uint> spots;
+
+        for (const Road& street : roads) {
+            street.spots_to_vector(spots);
+        }
+
+        const uint full_length = length * 4;
+        std::vector<float> vector_dist;
+        Log_mean_quadratic_distance(mean, spots, troll, full_length, vector_dist);
+
+        for (float& dist : vector_dist) {
+            dist /= full_length;
+        }
+
+        Log_entropy(entropy, vector_dist);
     }
 
     for (const Road& street : roads) {
@@ -358,6 +424,8 @@ int main()
 
     init.close();
     result.close();
+    mean.close();
+    entropy.close();
 
     return 0;
 }

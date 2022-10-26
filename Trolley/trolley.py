@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 
 path_init = '../../../VSProjects/Calculational_physics/Trolley/init.txt'
 path_res = '../../../VSProjects/Calculational_physics/Trolley/result.txt'
+path_mean = '../../../VSProjects/Calculational_physics/Trolley/mean.txt'
+path_entropy = '../../../VSProjects/Calculational_physics/Trolley/entropy.txt'
 
 
 def get_delta(vector):
@@ -42,6 +44,23 @@ ax_5.plot(init, np.arange(0, len(init)))
 ax_5.set_ylabel('Number of trolley')
 ax_5.set_xlabel('x, m')
 ax_6.plot(res, np.arange(0, len(res)))
+ax_6.set_xlim(0, 8000)
 ax_6.set_ylabel('Number of trolley')
 ax_6.set_xlabel('x, m')
+plt.show()
+
+# Mean distance
+mean = np.loadtxt(path_mean)
+plt.plot(mean)
+plt.title('Mean square distance')
+plt.xlabel('Time, s')
+plt.ylabel('Mean square distance, m')
+plt.show()
+
+# Mean entropy
+entropy = np.loadtxt(path_entropy)
+plt.plot(-entropy)
+plt.title('Entropy')
+plt.xlabel('Time, s')
+plt.ylabel('Entropy')
 plt.show()
