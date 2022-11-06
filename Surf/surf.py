@@ -3,24 +3,25 @@ import matplotlib.pyplot as plt
 
 draw_connect = True
 
-aux = np.loadtxt("../../../VSProjects/Calculational_physics/Surf/aux_info.txt")
-circ = np.loadtxt("../../../VSProjects/Calculational_physics/Surf/circle.txt")
+circ = np.loadtxt("../../../VSProjects/Calculational_physics/Surf_no_refer/circle.txt")
 
-dots_on_circ = int(aux)
-connect_string_number = dots_on_circ + 1
+dots_on_circ = int(circ[0, 0])
+soft_nodes = int(circ[0, 1])
+soft_string_number = dots_on_circ + 1
+connect_string_number = dots_on_circ + soft_nodes + 1
 
-circ_x = circ[:dots_on_circ, 0]
-circ_y = circ[:dots_on_circ, 1]
-circ_z = circ[:dots_on_circ, 2]
+circ_x = circ[1:soft_string_number, 0]
+circ_y = circ[1:soft_string_number, 1]
+circ_z = circ[1:soft_string_number, 2]
 
 # Close circuit
-circ_x = np.append(circ_x, circ[0, 0])
-circ_y = np.append(circ_y, circ[0, 1])
-circ_z = np.append(circ_z, circ[0, 2])
+circ_x = np.append(circ_x, circ[1, 0])
+circ_y = np.append(circ_y, circ[1, 1])
+circ_z = np.append(circ_z, circ[1, 2])
 
-nodes_x = circ[dots_on_circ: connect_string_number, 0]
-nodes_y = circ[dots_on_circ: connect_string_number, 1]
-nodes_z = circ[dots_on_circ: connect_string_number, 2]
+nodes_x = circ[soft_string_number: connect_string_number, 0]
+nodes_y = circ[soft_string_number: connect_string_number, 1]
+nodes_z = circ[soft_string_number: connect_string_number, 2]
 
 connect_x = circ[connect_string_number:, 0]
 connect_y = circ[connect_string_number:, 1]
