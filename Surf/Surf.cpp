@@ -269,6 +269,66 @@ struct Circuit
         }
     }
 
+    Triangle<type>& find_max_length_triangle()
+    {
+        bool found = false;
+        type length = 0;
+        Triangle<type>* max_triangle_ptr = nullptr;
+        for (Triangle<type>& triangle : triangles_) {
+            if (triangle.length_ > length || !found) {
+                found = true;
+                length = triangle.length_;
+                max_triangle_ptr = &triangle;
+            }
+        }
+        return *max_triangle_ptr;
+    }
+
+    Triangle<type>& find_min_length_triangle()
+    {
+        bool found = false;
+        type length = 0;
+        Triangle<type>* min_triangle_ptr = nullptr;
+        for (Triangle<type>& triangle : triangles_) {
+            if (triangle.length_ < length || !found) {
+                found = true;
+                length = triangle.length_;
+                min_triangle_ptr = &triangle;
+            }
+        }
+        return *min_triangle_ptr;
+    }
+
+    Triangle<type>& find_max_square_triangle()
+    {
+        bool found = false;
+        type square = 0;
+        Triangle<type>* max_triangle_ptr = nullptr;
+        for (Triangle<type>& triangle : triangles_) {
+            if (triangle.square_ > square || !found) {
+                found = true;
+                square = triangle.square_;
+                max_triangle_ptr = &triangle;
+            }
+        }
+        return *max_triangle_ptr;
+    }
+
+    Triangle<type>& find_min_square_triangle()
+    {
+        bool found = false;
+        type square = 0;
+        Triangle<type>* min_triangle_ptr = nullptr;
+        for (Triangle<type>& triangle : triangles_) {
+            if (triangle.square_ < square || !found) {
+                found = true;
+                square = triangle.square_;
+                min_triangle_ptr = &triangle;
+            }
+        }
+        return *min_triangle_ptr;
+    }
+
     void get_borders_coords()
     {
         bool x_max_found = false, x_min_found = false, y_max_found = false, y_min_found = false; bool z_min_found = false, z_max_found = false;
@@ -419,6 +479,26 @@ struct Circuit
         return out;
     }
 
+    bool partition_done()
+    {
+        const Triangle<type>& max_square_triangle = find_max_square_triangle();
+        const Triangle<type>& min_square_triangle = find_min_square_triangle();
+        const Triangle<type>& max_length_triangle = find_max_length_triangle();
+        const Triangle<type>& min_length_triangle = find_min_length_triangle();
+
+        const type max_square = max_square_triangle.square_;
+        const type min_square = min_square_triangle.square_;
+        const type max_lenght = max_length_triangle.length_;
+        const type min_length = min_length_triangle.length_;
+
+        if (max_square / min_square > 3 || max_lenght / min_length > std::sqrt(3)) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
     ~Circuit() = default;
 };
 
@@ -495,7 +575,7 @@ Point<type> cardioid(const type t)
 
 int main()
 {
-    const uint dots_on_circ = 100;
+    const uint dots_on_circ = 10;
     std::ofstream aux, file_circle, file_deform_circle, file_eight, file_cardioid;
 
     aux.open("aux_info.txt");
@@ -522,6 +602,8 @@ int main()
     for (std::ofstream& file : files) {
         file.close();
     }
+
+    const bool done = circ_cardioid.partition_done();
 
     return 0;
 }
