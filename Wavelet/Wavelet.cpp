@@ -11,7 +11,7 @@ template<typename type>
 type f(const type t)
 {
     const type pi = (type) std::acos(-1);
-    const type result = (2 + 8 * std::cos(7 * 2 * pi * t) - 10 * std::sin(2 * pi * t)) / 10;
+    const type result = (2 + 8 * std::cos(7 * 2 * pi * t) + 9 * std::sin(2 * pi * t));
     return result;
 }
 
@@ -48,28 +48,13 @@ void get_scaling_coeffs(std::vector<std::vector<type>>& levels, const uint max_l
 
         for (uint coeff_number = 0; coeff_number < coeffs_amount; ++coeff_number) {
             const uint upper_coeffs_amount = (uint) std::pow(2, upper_level_number);
-            const uint last_upper_coeff_index = upper_coeffs_amount - 1;
-            const uint last_coeff_index = coeffs_amount - 1;
 
-            type coeff_0 = 0, coeff_1 = 0, coeff_2 = 0, coeff_3 = 0;
+            type coeff_0 = upper_coefs[(coeff_number * 2) % upper_coeffs_amount] ;
+            type coeff_1 = upper_coefs[(coeff_number * 2 + 1) % upper_coeffs_amount];
+            type coeff_2 = upper_coefs[(coeff_number * 2 + 2) % upper_coeffs_amount];
+            type coeff_3 = upper_coefs[(coeff_number * 2 + 3) % upper_coeffs_amount];
 
-            coeff_1 = upper_coefs[coeff_number * 2];
-            coeff_2 = upper_coefs[coeff_number * 2 + 1];
-
-            if (coeff_number == 0) {
-                coeff_0 = upper_coefs[last_upper_coeff_index];
-            }
-            else {
-                coeff_0 = upper_coefs[coeff_number * 2 - 1];
-            }
-
-            if (coeff_number == last_coeff_index) {
-                coeff_3 = upper_coefs[0];
-            }
-            else {
-                coeff_3 = upper_coefs[coeff_number * 2 + 2];
-            }
-
+            
             const type coeff = (type) (coeff_0 * h0 + coeff_1 * h1 + coeff_2 * h2 + coeff_3 * h3);
             coeffs[coeff_number] = coeff;
         }
@@ -100,27 +85,11 @@ void get_wavelet_coeffs(std::vector<std::vector<type>>& levels, std::vector<std:
 
         for (uint coeff_number = 0; coeff_number < coeffs_amount; ++coeff_number) {
             const uint upper_coeffs_amount = (uint)std::pow(2, upper_level_number);
-            const uint last_upper_coeff_index = upper_coeffs_amount - 1;
-            const uint last_coeff_index = coeffs_amount - 1;
+            type coeff_0 = upper_coefs[(coeff_number * 2) % upper_coeffs_amount];
 
-            type coeff_0 = 0, coeff_1 = 0, coeff_2 = 0, coeff_3 = 0;
-
-            coeff_1 = upper_coefs[coeff_number * 2];
-            coeff_2 = upper_coefs[coeff_number * 2 + 1];
-
-            if (coeff_number == 0) {
-                coeff_0 = upper_coefs[last_upper_coeff_index];
-            }
-            else {
-                coeff_0 = upper_coefs[coeff_number * 2 - 1];
-            }
-
-            if (coeff_number == last_coeff_index) {
-                coeff_3 = upper_coefs[0];
-            }
-            else {
-                coeff_3 = upper_coefs[coeff_number * 2 + 2];
-            }
+            type coeff_1 = upper_coefs[(coeff_number * 2 + 1) % upper_coeffs_amount];
+            type coeff_2 = upper_coefs[(coeff_number * 2 + 2) % upper_coeffs_amount];
+            type coeff_3 = upper_coefs[(coeff_number * 2 + 3) % upper_coeffs_amount];
 
             const type coeff = (type)(coeff_0 * g0 + coeff_1 * g1 + coeff_2 * g2 + coeff_3 * g3);
             coeffs[coeff_number] = coeff;
